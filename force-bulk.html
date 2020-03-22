@@ -1,0 +1,186 @@
+<!--
+  Copyright 2014 Atsushi Kojo.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<script type="text/x-red" data-template-name="force-bulk in">
+  <div class="form-row">
+    <label for="node-input-force"><i class="fa fa-user"></i> Log in as</label>
+    <input type="text" id="node-input-force">
+  </div>
+  <div class="form-row">
+    <label for="node-input-operation"><i class="fa fa-wrench"></i> Operation</label>
+    <select type="text" id="node-input-operation">
+      <option value="query">query</option>
+      <option value="insert_record">insert(Record)</option>
+      <option value="insert_csv">insert(CSV)</option>
+      <option value="update">update</option>
+      <option value="upsert">upsert</option>
+      <option value="delete">delete</option>
+<!--      <option value="hardDelete">hardDelete</option>-->
+    </select>
+  </div>
+  <div class="form-row input-sobject-row">
+    <label for="node-input-sobject"><i class="fa fa-table"></i> Sobject</label>
+    <input type="text" id="node-input-sobject" placeholder="Sobject">
+  </div>
+  <div class="form-row input-extname-row hidden">
+    <label for="node-input-extname"><i class="fa fa-table"></i> External ID field name</label>
+    <input type="text" id="node-input-extname" placeholder="External ID field name">
+  </div>
+  <div class="form-row input-polltimeout-row">
+    <label for="node-input-polltimeout"><i class="fa fa-tag"></i> API Polling Timeout</label>
+    <input type="text" id="node-input-polltimeout" placeholder="10000">
+  </div>
+  <div class="form-row input-localfilename-row hidden">
+    <label for="node-input-localfilename"><i class="fa fa-file"></i> Local Filename</label>
+    <input type="text" id="node-input-localfilename" placeholder="Local Filename">
+  </div>
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name">
+  </div>
+</script>
+
+<script type="text/x-red" data-help-name="force-bulk in">
+    <p>force.com bulk node. the following process selected in <code>Operation</code>.</p>
+    <ul>
+      <li>Query</li>
+      <li>Create(Record)</li>
+      <li>Create(CSV)</li>
+      <li>Update</li>
+      <li>Create/Update</li>
+      <li>Delete</li>
+    </ul>
+
+    <h3>Inputs</h3>
+      <dl class="message-properties">
+        <dt class="optional">payload
+          <span class="property-type">string | array</span>
+        </dt>
+        <dd> Inputs the data for execute the selected process. </dd>
+      </dl>
+
+    <h3>Outputs</h3>
+      <dl class="message-properties">
+        <dt>payload <span class="property-type">array | object</span></dt>
+        <dd>Outputs the execution result of the selected process.</dd>
+      </dl>
+
+    <h3>Details</h3>
+    <h4>Query</h4>
+      <p>Execute search with SOQL query received in <code>msg.payload</code>. The property type that can be received is a <code>string</code>.</p>
+      <p> <code>msg.payload = "select Id, Name from Account";</code> </p>
+      <p> Set the object name (API Name) of the object whose data is to be searched in <code>Sobject</code>.</p>
+      <p> Specify the CSV file name to be output to <code>Local Filename</code>. The file name can be Relative path or Absolute path.</p>
+      <p>Create a CSV file of the retrieved search results and output it to the specified file. Also, a message indicating that the file has been output is stored in <code>msg.payload</code> and output.</p>
+
+    <h4>Create(Record): </h4>
+      <p> Create new data in the set Object based on json object data received by <code>msg.payload</code>. Property type is <code>array</code>.</p>
+      <p> <code>msg.payload = [{Name: 'hoge'},{Name: 'fuga'}];</code> </p>
+      <p> Set the object name (API Name) of the object for which you want to Create data in <code>Sobject</code>.</p>
+      <p> Set polling timeout in milliseconds in <code>API Polling Timeout</code>.</p>
+      <p>The execution results of creation are stored in <code>msg.payload</code> as a json object and output.</p>
+
+    <h4>Create(CSV): </h4>
+      <p> Read the file set in <code>Local Filename</code> and create new data in the set object.</p>
+      <p> Set the object name (API Name) of the object for which you want to Create data in <code>Sobject</code>.</p>
+      <p> Set polling timeout in milliseconds in <code>API Polling Timeout</code>.</p>
+      <p> Specify the CSV file name of the data to be created in <code>Local Filename</code>. The file name can be Relative path or Absolute path.</p>
+      <p>The execution results of creation are stored in <code>msg.payload</code> as a json object and output.</p>
+
+    <h4>Update: </h4>
+      <p> Read the file set in <code>Local Filename</code> and update the data of the set object.</p>
+      <p> Set the object name (API Name) of the object whose data is to be updated in <code>Sobject</code>.</p>
+      <p> Set polling timeout in milliseconds in <code>API Polling Timeout</code>.</p>
+      <p> Specify the CSV file name of the data to be updated in <code>Local Filename</code>. The file name can be Relative path or Absolute path.</p>
+      <p>The execution results of update are stored in <code>msg.payload</code> as a json object and output.</p>
+
+    <h4>Create/Update: </h4>
+      <p> Read the file set in <code>Local Filename</code> and create or update the data of the set object
+      <p>In <code>Sobject</code>, set the object name (API Name) of the object to create or update data.</p>
+      <p>In <code>External ID field name</code>, set the field name (API Name) of the external ID field that is the key to determine data creation or update.</p>
+      <p> Set polling timeout in milliseconds in <code>API Polling Timeout</code>.</p>
+      <p> Specify the CSV file name of the data to create or update in <code>Local Filename</code>. The file name can be Relative path or Absolute path.</p>
+      <p>The execution results of creation or update are stored in <code>msg.payload</code> as a json object and output.</p>
+
+    <h4>Delete: </h4>
+      <p> Read the file set in <code>Local Filename</code> and delete the data of the set object.</p>
+      <p> Set the object name (API Name) of the object whose data is to be deleted in <code>Sobject</code>.</p>
+      <p> Set polling timeout in milliseconds in <code>API Polling Timeout</code>.</p>
+      <p> Specify the CSV file name of the data to be deleted in <code>Local Filename</code>. The file name can be Relative path or Absolute path.</p>
+      <p>The execution results of deletion are stored in <code>msg.payload</code> as a json object and output.</p>
+
+</script>
+
+<script type="text/javascript">
+  RED.nodes.registerType('force-bulk in', {
+    category: 'storage-input',
+    color: "#48ace4",
+    defaults: {
+      force: { type: 'force', required: true },
+      operation: { value: 'query' },
+      sobject: { value: '' },
+      extname: { value: '' },
+      polltimeout: { value: 10000 },
+      localfilename: { value: '' },
+      name: { value: '' }
+    },
+    inputs: 1,
+    outputs: 1,
+    icon: 'force.png',
+    label: function () {
+      var forceNode = RED.nodes.node(this.force);
+      return this.name || 'force-bulk';
+    },
+    labelStyle: function () {
+      return this.name ? 'node_label_italic' : '';
+    },
+    oneditprepare: function () {
+      var inNode = RED.nodes.node(this.id);
+      var sobjel = $(".input-sobject-row");
+      var extel = $(".input-extname-row");
+      var toutl = $(".input-polltimeout-row");
+      var filel = $(".input-localfilename-row");
+      $("#node-input-operation").change(function () {
+        var id = $("#node-input-operation option:selected").val();
+        if(id != inNode.operation){
+          $("#node-input-localfilename").val("");
+          $("#node-input-extname").val("");
+        }
+        if (id == 'query') {
+          sobjel.show();
+          extel.hide();
+          toutl.hide();
+          filel.show();
+        } else if(id == 'insert_record') {
+          sobjel.show();
+          extel.hide();
+          toutl.show();
+          filel.hide();
+        } else if(id == 'upsert') {
+          sobjel.show();
+          extel.show();
+          toutl.show();
+          filel.show();
+        } else {
+          sobjel.show();
+          extel.hide();
+          toutl.show();
+          filel.show();
+        }
+      });
+    }
+  });
+</script>
