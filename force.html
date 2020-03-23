@@ -1,0 +1,359 @@
+<!--
+  Copyright 2014 Atsushi Kojo.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<script type="text/x-red" data-template-name="force">
+  <div id="node-config-force-client-keys">
+      <div class="form-row">
+        <label for="node-config-input-logintype"><i class="fa fa-plug"></i> Login Type</label>
+        <select type="text" id="node-config-input-logintype" style="width:70%">
+          <option value="Username-Password">login By Username-Password</option>
+          <option value="oauth">login By OAuth2</option>
+          <option value="Signed-Request">login By Signed-Request</option>
+        </select>
+      </div>
+      <div class="form-tips" id="node-config-force-tooltip">
+      </div>
+      <div class="form-row input-loginurl-row">
+        <label for="node-config-input-loginurl"><i class="fa fa-plug"></i> Login URL</label>
+        <select type="text" id="node-config-input-loginurl" style="width:70%">
+          <option value="https://login.salesforce.com">Production(login.salesforce.com)</option>
+          <option value="https://test.salesforce.com">Sandbox(test.salesforce.com)</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label for="node-config-input-username"><i class="fa fa-bookmark"></i> User Name</label>
+        <input type="text" id="node-config-input-username" placeholder="example@example.com" />
+      </div>
+      <div class="form-row input-password-row">
+        <label for="node-config-input-password"><i class="fa fa-lock"></i> Password</label>
+        <input type="password" id="node-config-input-password">
+      </div>
+      <div class="form-row input-clientid-row">
+        <label for="node-config-input-clientid"><i class="fa fa-bookmark"></i> Client Id</label>
+        <input type="password" id="node-config-input-clientid" />
+      </div>
+      <div class="form-row input-clientsecret-row">
+        <label for="node-config-input-clientsecret"><i class="fa fa-lock"></i> Client Secret</label>
+        <input type="password" id="node-config-input-clientsecret" />
+      </div>
+      <div class="form-row input-startauth-row">
+        <label>&nbsp;</label>
+        <a class="btn" id="node-config-start-auth" href="#" target="_blank">Authenticate with Force</a>
+      </div>
+  </div>
+  <div id="node-config-force">
+    <div class="form-row">
+        <label><i class="fa fa-user"></i> salesforce User</label>
+        <span id="node-config-force-username" class="input-xlarge uneditable-input"></span>
+    </div>
+    <input type="hidden" id="node-config-input-userId">
+  </div>
+</script>
+
+<script type="text/x-red" data-help-name="force" data-lang="en-US">
+    <p>Set login information for force.com. This node uses the following three login methods.</p>
+    <ul>
+      <li>Login with username / password：
+        <p>Set Username(<code>User Name</code>) and Password(<code>Password</code>).</p>
+      </li>
+      <li>Login with OAuth2：
+        <p>When logging in with OAuth2, Create a Connected App with salesforce Setup -> Create -> Apps</p>
+        <p>At this time, specify the Redirect URL displayed on the node setting screen as the Callback URL of the Connected App.</p>
+        <p>Set the Username(<code>User Name</code>), Consumer Key(<code>Client Id</code>), and Consumer Secret(<code>Client Secret</code>), and click the <code>Authenticate with Force</code> button to get login information.</p>
+      </li>
+      <li>Login with Signed Request：
+        <p>When logging in with a Signed Request, Create a Connected App with salesforce Setup -> Create -> Apps</p>
+        <p>Set the Username(<code>User Name</code>) and Consumer Secret(<code>Client Secret</code>).</p>
+      </li>
+    </ul>
+</script>
+
+<script type="text/javascript">
+  RED.nodes.registerType('force', {
+    category: 'config',
+    color: "#48ace4",
+    defaults: {
+      username: { value: '', required: true },
+      loginurl: { value: "https://login.salesforce.com" },
+      logintype: { value: "Username-Password" },
+    },
+    credentials: {
+      password: { type: 'password', required: true },
+      clientid: { type: 'password', required: true },
+      clientsecret: { type: 'password', required: true },
+      userId: { type: 'text' }
+    },
+    label: function() {
+      return this.username
+    },
+    oneditprepare: function() {
+        var configNode = this;
+        var id = this.id;
+        var pathname = document.location.pathname;
+        if (pathname.slice(-1) != "/") {
+            pathname += "/";
+        }
+        var callback = location.protocol + "//";
+        callback += (location.port == "")? location.hostname : location.hostname + ":" + location.port;
+        callback += pathname + "force/credentials/"+id+"/auth/callback";
+        $("#node-config-force-tooltip").html("<p>Please configure the authorized <b>Redirect URIs</b> of your app to include the following url:</p>\n<code>"+callback+"</code>");
+
+        function updateForceAuthButton() {
+            var v1 = $("#node-config-input-clientid").val();
+            var v2 = $("#node-config-input-clientsecret").val();
+            var v3 = $("#node-config-input-username").val();
+            $("#node-config-start-auth").toggleClass("disabled",(v1.length === 0 || v2.length === 0 || v3.length === 0));
+        }
+        $("#node-config-input-username").on('change keydown paste input',updateForceAuthButton);
+        $("#node-config-input-clientid").on('change keydown paste input',updateForceAuthButton);
+        $("#node-config-input-clientsecret").on('change keydown paste input',updateForceAuthButton);
+
+        updateForceAuthButton();
+
+        function pollForceCredentialsUrl() {
+            $.getJSON('credentials/force/'+id,function(data) {
+                if (data.userId) {
+                    updateForceUserId(data.userId);
+                    delete window.forceConfigNodeIntervalId;
+                } else {
+                    window.forceConfigNodeIntervalId = window.setTimeout(pollForceCredentialsUrl,2000);
+                }
+            });
+        }
+
+        function updateForceUserId(dn) {
+            $("#node-config-force-client-keys").hide();
+            $("#node-config-force").show();
+            $("#node-config-input-userId").val(dn);
+            var username = $("#node-config-input-username").val();
+            $("#node-config-force-username").html(username);
+        }
+
+        if (this.credentials.userId) {
+            updateForceUserId(this.userId);
+        } else {
+            $("#node-config-force-client-keys").show();
+            $("#node-config-force").hide();
+        }
+
+        $("#node-config-start-auth").mousedown(function() {
+            var clientid = $("#node-config-input-clientid").val();
+            var clientsecret = $("#node-config-input-clientsecret").val();
+            var username = $("#node-config-input-username").val();
+            var loginurl = $("#node-config-input-loginurl option:selected").val();
+            var url = 'force/credentials/'+id+'/auth?id='+id
+                      +'&clientid='+clientid
+                      +'&clientsecret='+clientsecret
+                      +'&callback='+encodeURIComponent(callback)
+                      +'&username='+username
+                      +'&loginurl='+encodeURIComponent(loginurl);
+            $(this).attr("href", url);
+            window.forceConfigNodeIntervalId = window.setTimeout(pollForceCredentialsUrl,2000);
+        });
+
+        $("#node-config-start-auth").click(function(e) {
+            var clientid = $("#node-config-input-clientid").val();
+            var clientsecret = $("#node-config-input-clientsecret").val();
+            var username = $("#node-config-input-username").val();
+            if (clientid === "" || clientsecret === "" || username === "") {
+                e.preventDefault();
+            }
+        });
+
+
+        $("#node-config-input-logintype").change(function () {
+            var passwordel = $(".input-password-row");
+            var clientidel = $(".input-clientid-row");
+            var secretel = $(".input-clientsecret-row");
+            var buttonel = $(".input-startauth-row");
+            var loginurlel = $(".input-loginurl-row");
+            var tooltipel = $("#node-config-force-tooltip");
+
+            var id = $("#node-config-input-logintype option:selected").val();
+            if (id == 'oauth') {
+              passwordel.hide();
+              clientidel.show();
+              secretel.show();
+              buttonel.show();
+              tooltipel.show();
+              loginurlel.show();
+            } else if (id == 'Username-Password') {
+              passwordel.show();
+              clientidel.hide();
+              secretel.hide();
+              buttonel.hide();
+              tooltipel.hide();
+              loginurlel.show();
+            } else {
+              passwordel.hide();
+              clientidel.hide();
+              secretel.show();
+              buttonel.hide();
+              tooltipel.hide();
+              loginurlel.hide();
+            }
+        });
+    }
+  });
+
+
+</script>
+
+<script type="text/x-red" data-template-name="force in">
+  <div class="form-row">
+    <label for="node-input-force"><i class="fa fa-user"></i> Log in as</label>
+    <input type="text" id="node-input-force">
+  </div>
+  <div class="form-row">
+    <label for="node-input-operation"><i class="fa fa-wrench"></i> Operation</label>
+    <select type="text" id="node-input-operation">
+      <option value="query">query</option>
+      <option value="create">create</option>
+      <option value="update">update</option>
+      <option value="upsert">upsert</option>
+      <option value="delete">delete</option>
+    </select>
+  </div>
+  <div class="form-row input-sobject-row hidden">
+    <label for="node-input-sobject"><i class="fa fa-table"></i> Sobject</label>
+    <input type="text" id="node-input-sobject" placeholder="Sobject">
+  </div>
+  <div class="form-row input-extname-row hidden">
+    <label for="node-input-extname"><i class="fa fa-table"></i> External ID field name</label>
+    <input type="text" id="node-input-extname" placeholder="External ID field name">
+  </div>
+  <div class="form-row input-maxfetch-row hidden">
+    <label for="node-input-maxfetch"><i class="fa fa-table"></i> maxFetch value</label>
+    <input type="text" id="node-input-maxfetch" placeholder="maxFetch value">
+  </div>
+
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name">
+  </div>
+</script>
+
+<script type="text/x-red" data-help-name="force in" data-lang="en-US">
+    <p>force.com node. Execute the following process selected in <code>Operation</code></p>
+    <ul>
+      <li>Query</li>
+      <li>Create</li>
+      <li>Update</li>
+      <li>Create / Update</li>
+      <li>Delete</li>
+    </ul>
+
+    <h3>Inputs</h3>
+      <dl class="message-properties">
+        <dt class="optional">payload
+          <span class="property-type">string | array | object</span>
+        </dt>
+        <dd> Inputs the data for execute the selected process. </dd>
+      </dl>
+
+    <h3>Outputs</h3>
+      <dl class="message-properties">
+        <dt>payload <span class="property-type">array | object</span></dt>
+        <dd>Outputs the execution result of the selected process.</dd>
+      </dl>
+
+    <h3>Details</h3>
+    <h4>Query</h4>
+      <p>Execute search with SOQL query received in <code>msg.payload</code>. The property type that can be received is a <code>string</code>.</p>
+      <p> <code>msg.payload = "select Id, Name from Account";</code></p>
+      <p> Set the number of records to be acquired in <code>maxFetch value</code>. When <code>maxFetch value</code> is not set, a maximum of 10,000 records will be acquired.</p>
+      <p>The retrieved search results are stored in <code>msg.payload</code> as a json object and output.</p>
+
+    <h4>Create: </h4>
+      <p> Create new data in the set Object based on json object data received by <code>msg.payload</code>. Property type is <code>object</code> or <code>array</code>.</p>
+      <p> <code>msg.payload = {Name: 'hoge'};</code><br>
+      <code>msg.payload = [{Name: 'hoge'},{Name: 'fuga'}];</code></p>
+      <p> Set the object name (API Name) of the object for which you want to Create data in <code>Sobject</code>.</p>
+      <p>The execution results of creation are stored in <code>msg.payload</code> as a json object and output.</p>
+
+    <h4>Update: </h4>
+      <p> Update the data based on the json object data received in <code>msg.payload</code>. Property type is <code>object</code> or <code>array</code>.</p>
+      <p> <code>msg.payload = {Id: '00000', Name: 'hogehoge'};</code><br>
+      <code>msg.payload = [{Id: '00000', Name: 'hogehoge'},{Id: '11111', Name: 'fugafuga'}];</code></p>
+      <p> Set the object name (API Name) of the object whose data is to be updated in <code>Sobject</code>.</p>
+      <p>The execution results of update are stored in <code>msg.payload</code> as a json object and output.</p>
+
+    <h4>Create / Update: </h4>
+      <p> Create or Update data based on json object data received by <code>msg.payload</code>. Property type is <code>object</code> or <code>array</code>.</p>
+      <p> <code>msg.payload = {key__c: 'key1', Name: 'hoge'};</code><br>
+      <code>msg.payload = [{key__c: 'key1', Name: 'hoge'},{key__c: 'key2', Name: 'fuga'}];</code></p>
+      <p>In <code>Sobject</code>, set the object name (API Name) of the object to create or update data.</p>
+      <p>In <code>External ID field name</code>, set the field name (API Name) of the external ID field that is the key to determine data creation or update.</p>
+      <p>The execution results of creation or update are stored in <code>msg.payload</code> as a json object and output.</p>
+
+    <h4>Delete: </h4>
+      <p> Delete data based on json object data received in <code>msg.payload</code>. Property type is <code>string</code> or <code>array</code>.</p>
+      <p> <code>msg.payload = "['00000']";</code><br>
+      <code>msg.payload = ['00000', '11111'];</code></p>
+      <p> Set the object name (API Name) of the object whose data is to be deleted in <code>Sobject</code>.</p>
+      <p>The execution results of deletion are stored in <code>msg.payload</code> as a json object and output.</p>
+
+    <p>It is convenient to use the execution results of the force node (query) for the object Id of the data to be entered when updating or deleting.</p>
+    <pre>msg.record = msg.payload;
+msg.payload = { Id: msg.record[0].Id };</pre>
+
+</script>
+
+<script type="text/javascript">
+  RED.nodes.registerType('force in', {
+    category: 'storage-input',
+    color: "#48ace4",
+    defaults: {
+      force: { type: 'force', required: true },
+      operation: { value: 'query' },
+      sobject: { value: '' },
+      extname: { value: '' },
+      maxfetch: { value: '' },
+      name: { value: '' }
+    },
+    inputs: 1,
+    outputs: 1,
+    icon: 'force.png',
+    label: function () {
+      var forceNode = RED.nodes.node(this.force);
+      return this.name || 'force';
+    },
+    labelStyle: function () {
+      return this.name ? 'node_label_italic' : '';
+    },
+    oneditprepare: function () {
+      var extel = $(".input-extname-row");
+      var sobjel = $(".input-sobject-row");
+      var maxfetchel = $(".input-maxfetch-row");
+      $("#node-input-operation").change(function () {
+        var id = $("#node-input-operation option:selected").val();
+        if (id == 'query') {
+          extel.hide();
+          sobjel.hide();
+          maxfetchel.show();
+        } else if (id == 'upsert') {
+          extel.show();
+          sobjel.show();
+          maxfetchel.hide();
+        } else {
+          extel.hide();
+          sobjel.show();
+          maxfetchel.hide();
+        }
+      });
+    }
+  });
+</script>
