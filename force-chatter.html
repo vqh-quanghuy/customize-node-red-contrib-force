@@ -42,14 +42,20 @@
     <select id="node-input-to" >
     </select>
   </div>
+  <div class="form-row">
+    <input id="searchInput" name="searchInput" onkeyup="searchMention()" type="text" placeholder="Search for Users..">
+  </div>
   <div class="form-row input-mention-row hidden">
     <label for="node-input-mention"><i class="fa fa-group"></i> @Mention</label>
     <select id="node-input-mention" multiple="multiple" size="5">
     </select>
   </div>
-  <div class="form-row" style="padding:10px; float:left">
-    <button id="node-input-loadUser" style="border:none; color: #fff; background-color: #505050 ">Load more Users</button>
-    <button id="node-input-loadGroup" style="border:none; color: #fff; background-color: #505050">Load more Groups</button>
+  <div class="form-row load-more-row" style="padding:10px; float:left">
+    <button class="loadUserBtn" id="node-input-loadUser" style="border:none; color: #fff; background-color: #505050 ">Load more Users</button>
+    <button class="loadGroupBtn" id="node-input-loadGroup" style="border:none; color: #fff; background-color: #505050">Load more Groups</button>
+  </div>
+  <div class="form-row load-selected-row">
+    <p id="loadSelected"></p> 
   </div>
   <div class="form-row">
     <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
@@ -143,6 +149,7 @@
       var queryel = $(".input-query-row");
       var toel = $(".input-to-row");
       var mentionel = $(".input-mention-row");
+      var loadel = $(".load-more-row");
       var val = parseInt($("#node-input-loadUser").val(0));
       var val2 = parseInt($("#node-input-loadGroup").val(0));
       $("#node-input-loadUser")
@@ -177,17 +184,22 @@
           groupel.show();
           queryel.hide();
           toel.hide();
+          loadel.show();
+          $(".loadUserBtn").hide();
           mentionel.hide();
           window.chatterNodeIntervalId = window.setTimeout(pollChatterGroup, 2000);
         } else if (id == "search_feed") {
           groupel.hide();
           queryel.show();
           toel.hide();
+          loadel.hide();
           mentionel.hide();
         } else if (id == "post_feed") {
           groupel.hide();
           queryel.hide();
           toel.show();
+          $(".loadUserBtn").show();
+          loadel.show();
           mentionel.show();
           window.chatterNodeIntervalId = window.setTimeout(pollChatterMention, 2000);
         } else {
@@ -195,6 +207,7 @@
           queryel.hide();
           toel.hide();
           mentionel.hide();
+          loadel.hide();
         }
       });
     },
@@ -217,7 +230,6 @@
       }
     }
   });
-
   var chatterNode;
   function updateGroupList(lists) {
     var grouplist = $("#node-input-group");
@@ -257,7 +269,6 @@
       window.chatterNodeIntervalId = window.setTimeout(pollChatterGroup, 2000);
     }
   }
-
   var listUser = []
   var listGroup = []
   var tempUser = {}
@@ -302,7 +313,8 @@
     opts += '<optgroup label="Users">';
     var count = 0;
     $.each(listUser, function (i, opt) {
-      opts += '<option value="' + opt.id + '">' + ++count + '|  ' + opt.name + '</option>';
+      // opts += '<option value="' + opt.id + '">' + ++count + '|  ' + opt.name + '</option>';
+      opts += '<option value="' + opt.id + '">' + opt.name + '</option>';
     });
     opts += '</optgroup>';
 
@@ -315,8 +327,25 @@
     mentionlist.append(opts);
 
     mentionlist.val(chatterNode.mention.split(','));
+    var selectedItems = [];
+    // $("#node-input-mention option: selected").each(function () { selectedItems.push($(mentionSelected).val()); });
+    // var outputSelected = selectedItems.join(', ');
+    // alert(selectedItems)
   }
+  function searchMention() {
+    var keyword = document.getElementById("searchInput").value;
+    var selects = $("#node-input-mention").children("optgroup")[0].childNodes
 
+    selects.forEach(function (select) {
+      var txt = select.innerText;
+      // if (txt.toLowerCase().substring(txt.indexOf("|") + 1).replace(/^\s+/g, '') !== keyword.toLowerCase() && keyword.trim() !== "") {
+      if (txt.substring(0, keyword.length).toLowerCase() !== keyword.toLowerCase() && keyword.trim() !== "") {
+        $("#node-input-mention option[value='" + select.value + "']").attr('disabled', 'disabled').hide()
+      } else {
+        $("#node-input-mention option[value='" + select.value + "']").removeAttr('disabled').show()
+      }
+    })
+  }
   var listGroupTo = [];
   var tempGroupTo = {};
   function updateToList(lists) {
@@ -339,7 +368,6 @@
     tolist.append(opts);
     tolist.val(chatterNode.to);
   }
-
   function pollChatterMention() {
     var configid = $("#node-input-force").val();
     configid = configid.replace("_ADD_", "");
