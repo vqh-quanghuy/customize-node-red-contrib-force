@@ -47,7 +47,7 @@
   </div>
   <div class="form-row input-mention-row hidden">
     <label for="node-input-mention"><i class="fa fa-group"></i> @Mention</label>
-    <select id="node-input-mention" onClick="selectedMention()" multiple="multiple" size="5">
+    <select id="node-input-mention" onchange="selectedMention()" multiple="multiple" size="5">
     </select>
   </div>
   <div class="form-row load-more-row" style="padding:10px; float:left">
@@ -56,10 +56,10 @@
   </div>
   <div class="form-row load-selected-row">
     <div>Selected Users: 
-      <p id="usersSelected"></p>
+      <p style="font-weight: bold;" id="usersSelected"></p>
     </div>
     <div>Selected Groups: 
-      <p id="groupsSelected"></p>
+      <p style="font-weight: bold;" id="groupsSelected"></p>
     </div> 
   </div>
   <div class="form-row">
@@ -157,6 +157,7 @@
       var loadel = $(".load-more-row");
       var searchel = $(".search-row");
       var selectel = $(".load-selected-row");
+      var selected = selectedMention();
       var val = parseInt($("#node-input-loadUser").val(0));
       var val2 = parseInt($("#node-input-loadGroup").val(0));
       $("#node-input-loadUser")
@@ -358,21 +359,18 @@
     })
   }
   function selectedMention() {
-    $("#node-input-mention").change(function () {
-      var selectedUsers = "";
-      var selectedGroups = "";
-      $("#node-input-mention option:selected").each(function () {
-        var label = $(this).closest('optgroup').attr('label');
-        if (label == "Users") {
-          selectedUsers += $(this).text() + ", ";
-        } else {
-          selectedGroups += $(this).text() + ", ";
-        }
-      });
-      $("#usersSelected").text(selectedUsers);
-      $("#groupsSelected").text(selectedGroups);
-    })
-      .trigger("change");
+    var selectedUsers = "";
+    var selectedGroups = "";
+    $("#node-input-mention option:selected").each(function () {
+      var label = $(this).closest('optgroup').attr('label');
+      if (label == "Users") {
+        selectedUsers += $(this).text() + ", ";
+      } else {
+        selectedGroups += $(this).text() + ", ";
+      }
+    });
+    $("#usersSelected").text(selectedUsers);
+    $("#groupsSelected").text(selectedGroups);
   }
   var listGroupTo = [];
   var tempGroupTo = {};
@@ -414,6 +412,7 @@
           if (data) {
             updateMentionList(data);
             updateToList(data);
+            selectedMention();
             delete window.chatterNodeIntervalId;
           } else {
             window.chatterNodeIntervalId = window.setTimeout(pollChatterMention, 2000);
