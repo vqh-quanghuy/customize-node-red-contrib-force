@@ -25,7 +25,7 @@
       <option value="get_feed">Get My Feed</option>
       <option value="get_group">Get Group Feed</option>
       <option value="search_feed">Search Feed</option>
-      <option value="post_feed">Post Feed Customized</option>
+      <option value="post_feed">Post Feed</option>
     </select>
   </div>
   <div class="form-row input-group-row hidden">
@@ -51,15 +51,15 @@
     </select>
   </div>
   <div class="form-row load-more-row" style="padding:10px; float:left">
-    <button class="loadUserBtn" id="node-input-loadUser" style="border:none; color: #fff; background-color: #505050 ">Load more Users</button>
-    <button class="loadGroupBtn" id="node-input-loadGroup" style="border:none; color: #fff; background-color: #505050">Load more Groups</button>
+    <button class="loadUserBtn" id="node-input-loadUser" style="border:none; color: #fff; background-color: #48ace4; border-radius: 5px;">Load more Users</button>
+    <button class="loadGroupBtn" id="node-input-loadGroup" style="border:none; color: #fff; background-color: #48ace4; border-radius: 5px;">Load more Groups</button>
   </div>
   <div class="form-row load-selected-row">
-    <div>Selected Users: 
-      <p style="font-weight: bold;" id="usersSelected"></p>
+    <div style="font-weight: bold;" >Selected Users: 
+      <p style="font-weight: normal;" id="usersSelected"></p>
     </div>
-    <div>Selected Groups: 
-      <p style="font-weight: bold;" id="groupsSelected"></p>
+    <div style="font-weight: bold;" >Selected Groups: 
+      <p style="font-weight: normal;" id="groupsSelected"></p>
     </div> 
   </div>
   <div class="form-row">
@@ -158,8 +158,8 @@
       var searchel = $(".search-row");
       var selectel = $(".load-selected-row");
       var selected = selectedMention();
-      var val = parseInt($("#node-input-loadUser").val(0));
-      var val2 = parseInt($("#node-input-loadGroup").val(0));
+      var val = parseInt($("#node-input-loadUser").val());
+      var val2 = parseInt($("#node-input-loadGroup").val());
       $("#node-input-loadUser")
         .button()
         .click(function () {
@@ -228,8 +228,8 @@
       });
     },
     oneditsave: function () {
-      $("#node-input-loadUser").val(0);
-      $("#node-input-loadGroup").val(0);
+      var val = parseInt($("#node-input-loadUser").val());
+      var val2 = parseInt($("#node-input-loadGroup").val());
       var id = $("#node-input-operation option:selected").val();
       if (id == "post_feed") {
         var selected = $("#node-input-mention").val();
@@ -327,9 +327,7 @@
 
     $("#node-input-loadUser").text("Load more Users (" + listUser.length + ")")
     opts += '<optgroup label="Users">';
-    var count = 0;
     $.each(listUser, function (i, opt) {
-      // opts += '<option value="' + opt.id + '">' + ++count + '|  ' + opt.name + '</option>';
       opts += '<option value="' + opt.id + '">' + opt.name + '</option>';
     });
     opts += '</optgroup>';
