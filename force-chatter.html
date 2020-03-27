@@ -322,10 +322,20 @@
     }
 
     if (JSON.stringify(tempGroup) != JSON.stringify(groups.groups)) {
-      tempGroup = groups.groups
-      $.each(tempGroup, function (i, opt) {
-        listGroup.push(opt)
-      })
+      if (flag) {
+        tempGroup = groups.groups
+        $.each(tempGroup, function (i, opt) {
+          listGroup.push(opt)
+        })
+      } else {
+        if (JSON.stringify(tempGroup[0].id) !== JSON.stringify(groups.groups[0].id)) {
+          tempGroup = groups.groups
+          $.each(tempGroup, function (i, opt) {
+            listGroup.push(opt)
+          })
+        }
+      }
+
     }
     flag = false
 
