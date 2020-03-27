@@ -47,7 +47,7 @@
   </div>
   <div class="form-row input-mention-row hidden">
     <label for="node-input-mention"><i class="fa fa-group"></i> @Mention</label>
-    <select id="node-input-mention" onchange="selectedMention()" multiple="multiple" size="5">
+    <select id="node-input-mention" onchange="selectedMention()" multiple="multiple" size="5" style="width: 283px">
     </select>
   </div>
   <div class="form-row load-more-row" style="padding:10px; float:left">
@@ -124,8 +124,7 @@
 </script>
 
 <script type="text/javascript">
-  var val = parseInt($("#node-input-loadUser").val(0));
-  var val2 = parseInt($("#node-input-loadGroup").val(0));
+  var globalVal = true;
   RED.nodes.registerType("force-chatter in", {
     category: "storage-input",
     color: "#48ace4",
@@ -137,8 +136,8 @@
       to: { value: "" },
       mention: { value: "" },
       name: { value: "" },
-      loadUser: { value: "" },
-      loadGroup: { value: "" }
+      loadUser: { value: "0" },
+      loadGroup: { value: "0" }
     },
     inputs: 1,
     outputs: 1,
@@ -151,6 +150,11 @@
       return this.name ? "node_label_italic" : "";
     },
     oneditprepare: function () {
+      if (globalVal) {
+        var val = parseInt($("#node-input-loadUser").attr('value', 0));
+        var val2 = parseInt($("#node-input-loadGroup").attr('value', 0));
+        globalVal = false;
+      }
       chatterNode = RED.nodes.node(this.id);
       var groupel = $(".input-group-row");
       var queryel = $(".input-query-row");
@@ -160,12 +164,12 @@
       var searchel = $(".search-row");
       var selectel = $(".load-selected-row");
       var selected = selectedMention();
-     val = parseInt($("#node-input-loadUser").val());
-     val2 = parseInt($("#node-input-loadGroup").val());
+      val = parseInt($("#node-input-loadUser").val());
+      val2 = parseInt($("#node-input-loadGroup").val());
       $("#node-input-loadUser")
         .button()
         .click(function () {
-          var valTemp = ++val ;
+          var valTemp = ++val;
           $("#node-input-loadUser").val(valTemp);
           pollChatterMention2(valTemp, val2);
         });
@@ -328,7 +332,7 @@
     $("#node-input-loadUser").text("Load more Users (" + listUser.length + ")")
     opts += '<optgroup label="Users">';
     $.each(listUser, function (i, opt) {
-      opts += '<option value="' + opt.id + '">' + opt.name + '</option>';
+      opts += '<option value="' + opt.id + '">' + opt.name + " [ " + opt.userType + " ]" + '</option>';
     });
     opts += '</optgroup>';
 
@@ -350,9 +354,9 @@
     selects.forEach(function (select) {
       var txt = select.innerText;
       if (txt.substring(0, keyword.length).toLowerCase() !== keyword.toLowerCase() && keyword.trim() !== "") {
-        $("#node-input-mention option[value='" + select.value + "']").attr('disabled', 'disabled').hide()
+        $("#node-input-mention option[value='" + select.value + "']").hide()
       } else {
-        $("#node-input-mention option[value='" + select.value + "']").removeAttr('disabled').show()
+        $("#node-input-mention option[value='" + select.value + "']").show()
       }
     })
   }
