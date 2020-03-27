@@ -124,6 +124,8 @@
 </script>
 
 <script type="text/javascript">
+  var val = parseInt($("#node-input-loadUser").val(0));
+  var val2 = parseInt($("#node-input-loadGroup").val(0));
   RED.nodes.registerType("force-chatter in", {
     category: "storage-input",
     color: "#48ace4",
@@ -158,23 +160,21 @@
       var searchel = $(".search-row");
       var selectel = $(".load-selected-row");
       var selected = selectedMention();
-      var val = parseInt($("#node-input-loadUser").val());
-      var val2 = parseInt($("#node-input-loadGroup").val());
+     val = parseInt($("#node-input-loadUser").val());
+     val2 = parseInt($("#node-input-loadGroup").val());
       $("#node-input-loadUser")
         .button()
         .click(function () {
-          var val = parseInt($("#node-input-loadUser").val());
-          var val2 = parseInt($("#node-input-loadGroup").val());
-          $("#node-input-loadUser").val(val + 1);
-          pollChatterMention2(val + 1, val2);
+          var valTemp = ++val ;
+          $("#node-input-loadUser").val(valTemp);
+          pollChatterMention2(valTemp, val2);
         });
       $("#node-input-loadGroup")
         .button()
         .click(function () {
-          var val = parseInt($("#node-input-loadUser").val());
-          var val2 = parseInt($("#node-input-loadGroup").val());
-          $("#node-input-loadGroup").val(val2 + 1);
-          pollChatterMention2(val, val2 + 1);
+          var val2Temp = ++val2;
+          $("#node-input-loadGroup").val(val2Temp);
+          pollChatterMention2(val, val2Temp);
         });
       $("#node-input-operation").change(function () {
         if (window.chatterNodeIntervalId) {
@@ -228,8 +228,8 @@
       });
     },
     oneditsave: function () {
-      var val = parseInt($("#node-input-loadUser").val());
-      var val2 = parseInt($("#node-input-loadGroup").val());
+      val = parseInt($("#node-input-loadUser").val());
+      val2 = parseInt($("#node-input-loadGroup").val());
       var id = $("#node-input-operation option:selected").val();
       if (id == "post_feed") {
         var selected = $("#node-input-mention").val();
