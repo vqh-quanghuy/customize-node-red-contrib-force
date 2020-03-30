@@ -25,7 +25,7 @@
       <option value="get_feed">Get My Feed</option>
       <option value="get_group">Get Group Feed</option>
       <option value="search_feed">Search Feed</option>
-      <option value="post_feed">Post Feed Customized</option>
+      <option value="post_feed">Post Feed</option>
     </select>
   </div>
   <div class="form-row input-group-row hidden">
@@ -42,14 +42,25 @@
     <select id="node-input-to" >
     </select>
   </div>
+  <div class="form-row search-row">
+    <input id="searchInput" name="searchInput" onkeyup="searchMention()" type="text" placeholder="Search for Users..">
+  </div>
   <div class="form-row input-mention-row hidden">
     <label for="node-input-mention"><i class="fa fa-group"></i> @Mention</label>
-    <select id="node-input-mention" multiple="multiple" size="5">
+    <select id="node-input-mention" onchange="selectedMention()" multiple="multiple" size="5" style="width: 283px">
     </select>
   </div>
-  <div class="form-row" style="padding:10px; float:left">
-    <button id="node-input-loadUser" style="border:none; color: #fff; background-color: #505050 ">Load more Users</button>
-    <button id="node-input-loadGroup" style="border:none; color: #fff; background-color: #505050">Load more Groups</button>
+  <div class="form-row load-more-row" style="padding:10px; float:left">
+    <button class="loadUserBtn" id="node-input-loadUser" style="border:none; color: #fff; background-color: #48ace4; border-radius: 5px;">Load more Users</button>
+    <button class="loadGroupBtn" id="node-input-loadGroup" style="border:none; color: #fff; background-color: #48ace4; border-radius: 5px;">Load more Groups</button>
+  </div>
+  <div class="form-row load-selected-row">
+    <div style="font-weight: bold;" >Selected Users: 
+      <p style="font-weight: normal;" id="usersSelected"></p>
+    </div>
+    <div style="font-weight: bold;" >Selected Groups: 
+      <p style="font-weight: normal;" id="groupsSelected"></p>
+    </div> 
   </div>
   <div class="form-row">
     <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
@@ -113,6 +124,7 @@
 </script>
 
 <script type="text/javascript">
+  var globalVal = true;
   RED.nodes.registerType("force-chatter in", {
     category: "storage-input",
     color: "#48ace4",
@@ -124,8 +136,8 @@
       to: { value: "" },
       mention: { value: "" },
       name: { value: "" },
-      loadUser: { value: "" },
-      loadGroup: { value: "" }
+      loadUser: { value: "0" },
+      loadGroup: { value: "0" }
     },
     inputs: 1,
     outputs: 1,
@@ -138,28 +150,35 @@
       return this.name ? "node_label_italic" : "";
     },
     oneditprepare: function () {
+      if (globalVal) {
+        var val = parseInt($("#node-input-loadUser").attr('value', 0));
+        var val2 = parseInt($("#node-input-loadGroup").attr('value', 0));
+        globalVal = false;
+      }
       chatterNode = RED.nodes.node(this.id);
       var groupel = $(".input-group-row");
       var queryel = $(".input-query-row");
       var toel = $(".input-to-row");
       var mentionel = $(".input-mention-row");
-      var val = parseInt($("#node-input-loadUser").val(0));
-      var val2 = parseInt($("#node-input-loadGroup").val(0));
+      var loadel = $(".load-more-row");
+      var searchel = $(".search-row");
+      var selectel = $(".load-selected-row");
+      var selected = selectedMention();
+      val = parseInt($("#node-input-loadUser").val());
+      val2 = parseInt($("#node-input-loadGroup").val());
       $("#node-input-loadUser")
         .button()
         .click(function () {
-          var val = parseInt($("#node-input-loadUser").val());
-          var val2 = parseInt($("#node-input-loadGroup").val());
-          $("#node-input-loadUser").val(val + 1);
-          pollChatterMention2(val + 1, val2);
+          var valTemp = ++val;
+          $("#node-input-loadUser").val(valTemp);
+          pollChatterMention2(valTemp, val2);
         });
       $("#node-input-loadGroup")
         .button()
         .click(function () {
-          var val = parseInt($("#node-input-loadUser").val());
-          var val2 = parseInt($("#node-input-loadGroup").val());
-          $("#node-input-loadGroup").val(val2 + 1);
-          pollChatterMention2(val, val2 + 1);
+          var val2Temp = ++val2;
+          $("#node-input-loadGroup").val(val2Temp);
+          pollChatterMention2(val, val2Temp);
         });
       $("#node-input-operation").change(function () {
         if (window.chatterNodeIntervalId) {
@@ -177,30 +196,44 @@
           groupel.show();
           queryel.hide();
           toel.hide();
+          loadel.show();
+          searchel.hide();
+          $(".loadUserBtn").hide();
+          selectel.hide();
           mentionel.hide();
           window.chatterNodeIntervalId = window.setTimeout(pollChatterGroup, 2000);
         } else if (id == "search_feed") {
           groupel.hide();
           queryel.show();
           toel.hide();
+          loadel.hide();
+          searchel.hide();
           mentionel.hide();
+          selectel.hide();
         } else if (id == "post_feed") {
           groupel.hide();
           queryel.hide();
           toel.show();
+          $(".loadUserBtn").show();
+          selectel.show();
+          loadel.show();
+          searchel.show();
           mentionel.show();
           window.chatterNodeIntervalId = window.setTimeout(pollChatterMention, 2000);
         } else {
+          selectel.hide();
           groupel.hide();
           queryel.hide();
           toel.hide();
+          searchel.hide();
           mentionel.hide();
+          loadel.hide();
         }
       });
     },
     oneditsave: function () {
-      $("#node-input-loadUser").val(0);
-      $("#node-input-loadGroup").val(0);
+      val = parseInt($("#node-input-loadUser").val());
+      val2 = parseInt($("#node-input-loadGroup").val());
       var id = $("#node-input-operation option:selected").val();
       if (id == "post_feed") {
         var selected = $("#node-input-mention").val();
@@ -217,7 +250,6 @@
       }
     }
   });
-
   var chatterNode;
   function updateGroupList(lists) {
     var grouplist = $("#node-input-group");
@@ -257,7 +289,6 @@
       window.chatterNodeIntervalId = window.setTimeout(pollChatterGroup, 2000);
     }
   }
-
   var listUser = []
   var listGroup = []
   var tempUser = {}
@@ -291,18 +322,27 @@
     }
 
     if (JSON.stringify(tempGroup) != JSON.stringify(groups.groups)) {
-      tempGroup = groups.groups
-      $.each(tempGroup, function (i, opt) {
-        listGroup.push(opt)
-      })
+      if (flag) {
+        tempGroup = groups.groups
+        $.each(tempGroup, function (i, opt) {
+          listGroup.push(opt)
+        })
+      } else {
+        if (JSON.stringify(tempGroup[0].id) !== JSON.stringify(groups.groups[0].id)) {
+          tempGroup = groups.groups
+          $.each(tempGroup, function (i, opt) {
+            listGroup.push(opt)
+          })
+        }
+      }
+
     }
     flag = false
 
     $("#node-input-loadUser").text("Load more Users (" + listUser.length + ")")
     opts += '<optgroup label="Users">';
-    var count = 0;
     $.each(listUser, function (i, opt) {
-      opts += '<option value="' + opt.id + '">' + ++count + '|  ' + opt.name + '</option>';
+      opts += '<option value="' + opt.id + '">' + opt.name + " [ " + opt.userType + " ]" + '</option>';
     });
     opts += '</optgroup>';
 
@@ -315,8 +355,35 @@
     mentionlist.append(opts);
 
     mentionlist.val(chatterNode.mention.split(','));
+    var selectedItems = [];
   }
+  function searchMention() {
+    var keyword = document.getElementById("searchInput").value;
+    var selects = $("#node-input-mention").children("optgroup")[0].childNodes
 
+    selects.forEach(function (select) {
+      var txt = select.innerText;
+      if (txt.substring(0, keyword.length).toLowerCase() !== keyword.toLowerCase() && keyword.trim() !== "") {
+        $("#node-input-mention option[value='" + select.value + "']").hide()
+      } else {
+        $("#node-input-mention option[value='" + select.value + "']").show()
+      }
+    })
+  }
+  function selectedMention() {
+    var selectedUsers = "";
+    var selectedGroups = "";
+    $("#node-input-mention option:selected").each(function () {
+      var label = $(this).closest('optgroup').attr('label');
+      if (label == "Users") {
+        selectedUsers += $(this).text() + ", ";
+      } else {
+        selectedGroups += $(this).text() + ", ";
+      }
+    });
+    $("#usersSelected").text(selectedUsers);
+    $("#groupsSelected").text(selectedGroups);
+  }
   var listGroupTo = [];
   var tempGroupTo = {};
   function updateToList(lists) {
@@ -339,7 +406,6 @@
     tolist.append(opts);
     tolist.val(chatterNode.to);
   }
-
   function pollChatterMention() {
     var configid = $("#node-input-force").val();
     configid = configid.replace("_ADD_", "");
@@ -358,6 +424,7 @@
           if (data) {
             updateMentionList(data);
             updateToList(data);
+            selectedMention();
             delete window.chatterNodeIntervalId;
           } else {
             window.chatterNodeIntervalId = window.setTimeout(pollChatterMention, 2000);
