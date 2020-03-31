@@ -51,8 +51,8 @@
     </select>
   </div>
   <div class="form-row load-more-row" style="padding:10px; float:left">
-    <button class="loadUserBtn" id="node-input-loadUser" style="border:none; color: #fff; background-color: #48ace4; border-radius: 5px;">Load more Users</button>
-    <button class="loadGroupBtn" id="node-input-loadGroup" style="border:none; color: #fff; background-color: #48ace4; border-radius: 5px;">Load more Groups</button>
+    <button class="loadUserBtn" id="node-input-loadUser" style="border:none; color: #fff; background-color: #48ace4; border-radius: 5px">Load more Users</button>
+    <button class="loadGroupBtn" id="node-input-loadGroup" style="border:none; color: #fff; background-color: #48ace4; border-radius: 5px">Load more Groups</button>
   </div>
   <div class="form-row load-selected-row">
     <div style="font-weight: bold;" >Selected Users: 
@@ -339,14 +339,14 @@
     }
     flag = false
 
-    $("#node-input-loadUser").text("Load more Users (" + listUser.length + ")")
+    $("#node-input-loadUser").text("Load more Users (" + listUser.length + ")").css('padding', '10px')
     opts += '<optgroup label="Users">';
     $.each(listUser, function (i, opt) {
       opts += '<option value="' + opt.id + '">' + opt.name + " [ " + opt.userType + " ]" + '</option>';
     });
     opts += '</optgroup>';
 
-    $("#node-input-loadGroup").text("Load more Groups (" + listGroup.length + ")")
+    $("#node-input-loadGroup").text("Load more Groups (" + listGroup.length + ")").css('padding', '10px')
     opts += '<optgroup label="Groups">';
     $.each(listGroup, function (i, opt) {
       opts += '<option value="' + opt.id + '">' + opt.name + '</option>';
