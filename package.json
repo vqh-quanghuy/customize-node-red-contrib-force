@@ -33,7 +33,7 @@
   "bundleDependencies": false,
   "dependencies": {
     "jsforce": "^1.9.3",
-    "request": "2.42.0",
+    "request": "2.88.2",
     "salesforce-signed-request": "0.0.1"
   },
   "deprecated": false,
